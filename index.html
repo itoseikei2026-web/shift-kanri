@@ -368,21 +368,23 @@ async function removeFromShift(date, slot, uid) {
 // ================================================================
 async function doLogin(e) {
   e.preventDefault();
+  const email = el('lEmail').value.trim();
+  const pass = el('lPass').value;
   S.err = null; S.busy = true; render();
   try {
-    await auth.signInWithEmailAndPassword(el('lEmail').value, el('lPass').value);
+    await auth.signInWithEmailAndPassword(email, pass);
   } catch(ex) { S.busy=false; S.err=authMsg(ex.code); render(); }
 }
 
 async function doRegister(e) {
   e.preventDefault();
-  S.err = null; S.busy = true; render();
   const name = el('rName').value.trim();
   const role = el('rRole').value;
   const email = el('rEmail').value.trim();
   const pass = el('rPass').value;
-  if (!name||!role||!email||!pass) { S.busy=false; S.err='すべての項目を入力してください'; render(); return; }
-  if (pass.length < 6) { S.busy=false; S.err='パスワードは6文字以上'; render(); return; }
+  if (!name||!role||!email||!pass) { S.err='すべての項目を入力してください'; render(); return; }
+  if (pass.length < 6) { S.err='パスワードは6文字以上'; render(); return; }
+  S.err = null; S.busy = true; render();
   try {
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
     const snap = await db.collection('users').get();
