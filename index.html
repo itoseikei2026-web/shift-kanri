@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ã¯ãªããã¯ ã·ããç®¡ç</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ---- AUTH ---- */
+    .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .auth-card { background: white; border-radius: 14px; padding: 2rem; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+    .auth-title { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 1.5rem; color: var(--primary); }
+    .form-group { margin-bottom: 0.875rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .form-input, .form-select {
+      width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border);
+      border-radius: 7px; font-size: 0.875rem; outline: none; transition: border-color 0.2s; background: white;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; border-radius: 7px; font-size: 0.875rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: var(--primary); color: white; width: 100%; padding: 0.65rem; font-size: 0.95rem; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #f1f5f9; color: var(--text); }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-sm { padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 5px; }
+    .btn-xs { padding: 0.15rem 0.4rem; font-size: 0.65rem; border-radius: 4px; }
+    .link-btn { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 0.85rem; text-decoration: underline; }
+    .msg-error { background: #fee2e2; color: #b91c1c; border-radius: 7px; padding: 0.5rem 0.75rem; font-size: 0.8rem; margin-bottom: 0.75rem; }
+    .msg-ok { background: #dcfce7; color: #15803d; border-radius: 7px; padding: 0.5rem 0.75rem; font-size: 0.8rem; margin-bottom: 0.75rem; }
+
+    /* ---- HEADER ---- */
+    .header {
+      background: var(--primary); color: white;
+      padding: 0.65rem 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-title { font-weight: 800; font-size: 0.95rem; letter-spacing: 0.02em; }
+    .header-nav { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+    .nav-btn {
+      background: rgba(255,255,255,0.15); border: none; color: white;
+      padding: 0.25rem 0.65rem; border-radius: 5px; cursor: pointer;
+      font-size: 0.75rem; font-weight: 600; transition: background 0.15s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.28); }
+    .nav-btn.active { background: rgba(255,255,255,0.35); }
+
+    /* ---- CALENDAR ---- */
+    .cal-wrap { padding: 0.75rem; max-width: 1100px; margin: 0 auto; }
+    .cal-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      background: white; border-radius: 10px; padding: 0.65rem 1rem;
+      margin-bottom: 0.6rem; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .cal-nav-title { font-size: 1.1rem; font-weight: 800; }
+    .mn-btn {
+      background: #f1f5f9; border: 1.5px solid var(--border);
+      padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer;
+      font-size: 0.8rem; font-weight: 600; transition: all 0.15s;
+    }
+    .mn-btn:hover { background: #e2e8f0; }
+
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      background: white; padding: 0.45rem 0.75rem;
+      border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      margin-bottom: 0.6rem;
+    }
+    .legend-item { display: flex; align-items: center; gap: 0.25rem; font-size: 0.68rem; color: var(--muted); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 2px; background: var(--border);
+      border-radius: 10px; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .cal-dow {
+      background: #1e293b; color: white;
+      text-align: center; padding: 0.45rem;
+      font-size: 0.72rem; font-weight: 700;
+    }
+    .cal-dow.s { background: #dc2626; }
+    .cal-dow.sa { background: #1d4ed8; }
+
+    .cal-cell {
+      background: white; min-height: 90px;
+      padding: 0.3rem; cursor: pointer; transition: background 0.12s; position: relative;
+    }
+    .cal-cell:hover { background: #f0f9ff; }
+    .cal-cell.empty { background: #f8fafc; cursor: default; }
+    .cal-cell.today-cell { background: #eff6ff; }
+    .cal-cell.closed { background: #fafafa; cursor: default; }
+
+    .day-num { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.2rem; line-height: 1; }
+    .day-num.s { color: #dc2626; }
+    .day-num.sa { color: #1d4ed8; }
+    .today-circle {
+      background: var(--primary); color: white;
+      width: 1.3rem; height: 1.3rem; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 800;
+    }
+    .closed-lbl { font-size: 0.6rem; color: #cbd5e1; margin-top: 0.15rem; }
+    .slot-block { margin-bottom: 0.18rem; }
+    .slot-lbl { font-size: 0.57rem; color: var(--muted); font-weight: 700; margin-bottom: 0.08rem; }
+    .badge {
+      display: inline-flex; align-items: center;
+      font-size: 0.58rem; padding: 0.08rem 0.28rem;
+      border-radius: 4px; margin: 0.06rem 0.06rem 0.06rem 0;
+      font-weight: 600; line-height: 1.4;
+    }
+    .badge.me { outline: 2px solid currentColor; }
+    .r-doc { background: #dbeafe; color: #1e40af; }
+    .r-adm { background: #dcfce7; color: #166534; }
+    .r-nur { background: #fce7f3; color: #9d174d; }
+    .r-tec { background: #fef9c3; color: #854d0e; }
+    .r-pt  { background: #f3e8ff; color: #6b21a8; }
+    .r-oth { background: #f1f5f9; color: #334155; }
+    .empty-slot { font-size: 0.55rem; color: #cbd5e1; }
+
+    /* ---- MODAL ---- */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 500; padding: 1rem;
+    }
+    .modal {
+      background: white; border-radius: 14px; padding: 1.5rem;
+      width: 100%; max-width: 480px; max-height: 90vh;
+      overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    .modal-title {
+      font-size: 1rem; font-weight: 800;
+      margin-bottom: 1rem; padding-bottom: 0.65rem;
+      border-bottom: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); }
+    .slot-section {
+      margin-bottom: 0.75rem; padding: 0.75rem;
+      background: #f8fafc; border-radius: 8px; border: 1.5px solid var(--border);
+    }
+    .slot-head { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+    .slot-time { font-size: 0.68rem; color: var(--muted); font-weight: 400; }
+    .staff-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.3rem 0.4rem; background: white; border-radius: 6px;
+      border: 1px solid var(--border); margin-bottom: 0.3rem;
+    }
+    .staff-left { display: flex; align-items: center; gap: 0.4rem; }
+    .modal-badge { font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 5px; }
+    .add-row { display: flex; gap: 0.4rem; margin-top: 0.4rem; flex-wrap: wrap; }
+    .add-sel {
+      flex: 1; min-width: 140px; padding: 0.35rem 0.5rem;
+      border: 1.5px solid var(--border); border-radius: 6px;
+      font-size: 0.78rem; background: white;
+    }
+
+    /* ---- STAFF TABLE ---- */
+    .staff-wrap { padding: 0.75rem; max-width: 860px; margin: 0 auto; }
+    .staff-head { font-size: 1rem; font-weight: 800; margin-bottom: 0.75rem; }
+    .staff-tbl {
+      width: 100%; border-collapse: collapse;
+      background: white; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .staff-tbl th { background: #1e293b; color: white; padding: 0.55rem 0.75rem; font-size: 0.78rem; text-align: left; }
+    .staff-tbl td { padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+    .staff-tbl tr:last-child td { border-bottom: none; }
+    .staff-tbl tr:hover td { background: #f8fafc; }
+    .tag { font-size: 0.68rem; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600; }
+    .tag-admin { background: #dbeafe; color: #1e40af; }
+    .tag-staff { background: #f1f5f9; color: var(--muted); }
+
+    /* ---- PROFILE ---- */
+    .prof-wrap { padding: 0.75rem; max-width: 500px; margin: 0 auto; }
+    .prof-card { background: white; border-radius: 10px; padding: 1.25rem; margin-bottom: 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .prof-title { font-size: 0.78rem; color: var(--muted); font-weight: 700; margin-bottom: 0.65rem; }
+    .info-row { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; align-items: center; }
+    .info-key { font-size: 0.75rem; color: var(--muted); width: 52px; flex-shrink: 0; }
+    .info-val { font-size: 0.85rem; font-weight: 600; }
+    .my-shift-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 0.5rem; background: #f8fafc;
+      border-radius: 6px; margin-bottom: 0.3rem; font-size: 0.82rem;
+    }
+    .slot-tag {
+      font-size: 0.68rem; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600;
+    }
+    .slot-am { background: #dbeafe; color: #1e40af; }
+    .slot-pm { background: #fef3c7; color: #92400e; }
+
+    /* ---- SETUP SCREEN ---- */
+    .setup-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .setup-card { background: white; border-radius: 14px; padding: 2rem; max-width: 640px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+    .setup-card h1 { font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem; }
+    .setup-card p { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.6; }
+    .step { background: #f8fafc; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.65rem; border-left: 4px solid var(--primary); }
+    .step-num { font-size: 0.7rem; font-weight: 800; color: var(--primary); margin-bottom: 0.2rem; }
+    .step p { font-size: 0.8rem; margin-bottom: 0.5rem; }
+    .step code { background: #e2e8f0; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem; font-family: monospace; }
+    pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; font-size: 0.72rem; overflow-x: auto; line-height: 1.6; margin: 0.5rem 0; }
+
+    /* ---- LOADING ---- */
+    .loading { display: flex; align-items: center; justify-content: center; min-height: 200px; color: var(--muted); font-size: 0.85rem; gap: 0.5rem; }
+    .spinner { width: 1.5rem; height: 1.5rem; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 600px) {
+      .cal-cell { min-height: 68px; padding: 0.2rem; }
+      .cal-dow { font-size: 0.65rem; padding: 0.3rem; }
+      .badge { font-size: 0.5rem; }
+      .slot-lbl { font-size: 0.5rem; }
+      .cal-wrap { padding: 0.4rem; }
+    }
+    @media print {
+      .header, .cal-nav, .legend { display: none; }
+      .cal-cell { cursor: default; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div class="loading"><div class="spinner"></div>èª­ã¿è¾¼ã¿ä¸­...</div>
+</div>
+
+<script>
+// ================================================================
+// â STEP 1: Firebase ã®è¨­å®ãããã«è²¼ãä»ãã¦ãã ãã â
+// ================================================================
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyA5-U8hRAnn4Wmuar6NVzSRY9S4a3TCvcE",
+  authDomain:        "itoseikei2026-886cf.firebaseapp.com",
+  projectId:         "itoseikei2026-886cf",
+  storageBucket:     "itoseikei2026-886cf.firebasestorage.app",
+  messagingSenderId: "1035039083236",
+  appId:             "1:1035039083236:web:d022844160160216603af1"
+};
+// ================================================================
+
+// ================================================================
+// å®æ°
+// ================================================================
+const ROLES = ['å»å¸«', 'äºå', 'çè­·å¸«', 'æå¸«', 'çå­¦çæ³å£«'];
+const ROLE_CSS = { 'å»å¸«':'r-doc', 'äºå':'r-adm', 'çè­·å¸«':'r-nur', 'æå¸«':'r-tec', 'çå­¦çæ³å£«':'r-pt' };
+const ROLE_BG  = { 'å»å¸«':'#dbeafe', 'äºå':'#dcfce7', 'çè­·å¸«':'#fce7f3', 'æå¸«':'#fef9c3', 'çå­¦çæ³å£«':'#f3e8ff' };
+const DOW_JP = ['æ¥','æ','ç«','æ°´','æ¨','é','å'];
+
+// è¨ºçã·ããå®ç¾©
+// 0=æ¥ï¼ä¼è¨ºï¼, 1=æ, 2=ç«ï¼ååã®ã¿ï¼, 3=æ°´, 4=æ¨, 5=é, 6=å
+function availableSlots(dow) {
+  if (dow === 0) return [];
+  if (dow === 2) return ['morning'];
+  return ['morning','afternoon'];
+}
+const SLOT = {
+  morning:   { label:'åå', time:'8:40ã13:40',  icon:'ð' },
+  afternoon: { label:'åå¾', time:'15:00ã19:30', icon:'ð' }
+};
+
+// ================================================================
+// STATE
+// ================================================================
+const S = {
+  view: 'loading',
+  user: null,
+  userData: null,
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),
+  shifts: {},      // { "YYYY-MM-DD": { morning:[...], afternoon:[...] } }
+  staff: [],       // all users
+  modal: null,     // { date, dow }
+  err: null,
+  busy: false
+};
+
+// ================================================================
+// HELPERS
+// ================================================================
+const ds = (y,m,d) => `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const daysIn = (y,m) => new Date(y, m+1, 0).getDate();
+const firstDow = (y,m) => new Date(y, m, 1).getDay();
+const isToday = (y,m,d) => { const t=new Date(); return t.getFullYear()===y&&t.getMonth()===m&&t.getDate()===d; };
+const rc = r => ROLE_CSS[r]||'r-oth';
+const el = id => document.getElementById(id);
+const configured = () => FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY';
+
+// ================================================================
+// FIREBASE
+// ================================================================
+let auth, db;
+if (configured()) {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  auth = firebase.auth();
+  db   = firebase.firestore();
+}
+
+async function loadShifts(y, m) {
+  const pre = `${y}-${String(m+1).padStart(2,'0')}`;
+  const snap = await db.collection('shifts')
+    .where('date','>=',pre+'-01')
+    .where('date','<=',pre+'-31')
+    .get();
+  const result = {};
+  snap.forEach(doc => {
+    const d = doc.data();
+    if (!result[d.date]) result[d.date] = { morning:[], afternoon:[] };
+    result[d.date][d.slot] = d.staff || [];
+  });
+  S.shifts = result;
+  render();
+}
+
+async function loadStaff() {
+  const snap = await db.collection('users').get();
+  S.staff = [];
+  snap.forEach(doc => S.staff.push({ uid: doc.id, ...doc.data() }));
+  render();
+}
+
+async function saveSlot(date, slot, list) {
+  await db.collection('shifts').doc(`${date}_${slot}`).set({ date, slot, staff: list });
+  if (!S.shifts[date]) S.shifts[date] = { morning:[], afternoon:[] };
+  S.shifts[date][slot] = list;
+}
+
+async function addToShift(date, slot, member) {
+  const cur = (S.shifts[date]||{})[slot]||[];
+  if (cur.find(x => x.uid === member.uid)) return;
+  await saveSlot(date, slot, [...cur, member]);
+}
+
+async function removeFromShift(date, slot, uid) {
+  const cur = (S.shifts[date]||{})[slot]||[];
+  await saveSlot(date, slot, cur.filter(x => x.uid !== uid));
+}
+
+// ================================================================
+// AUTH ACTIONS
+// ================================================================
+async function doLogin(e) {
+  e.preventDefault();
+  S.err = null; S.busy = true; render();
+  try {
+    await auth.signInWithEmailAndPassword(el('lEmail').value, el('lPass').value);
+  } catch(ex) { S.busy=false; S.err=authMsg(ex.code); render(); }
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  S.err = null; S.busy = true; render();
+  const name = el('rName').value.trim();
+  const role = el('rRole').value;
+  const email = el('rEmail').value.trim();
+  const pass = el('rPass').value;
+  if (!name||!role||!email||!pass) { S.busy=false; S.err='ãã¹ã¦ã®é ç®ãå¥åãã¦ãã ãã'; render(); return; }
+  if (pass.length < 6) { S.busy=false; S.err='ãã¹ã¯ã¼ãã¯6æå­ä»¥ä¸'; render(); return; }
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    const snap = await db.collection('users').get();
+    const isFirst = snap.empty;
+    await db.collection('users').doc(cred.user.uid).set(
+      { name, role, email, isAdmin: isFirst, createdAt: new Date().toISOString() }
+    );
+  } catch(ex) { S.busy=false; S.err=authMsg(ex.code); render(); }
+}
+
+async function doLogout() {
+  await auth.signOut();
+  Object.assign(S, { view:'login', user:null, userData:null, shifts:{}, staff:[], modal:null });
+  render();
+}
+
+function authMsg(code) {
+  return ({
+    'auth/user-not-found':'ã¡ã¼ã«ã¢ãã¬ã¹ãè¦ã¤ããã¾ãã',
+    'auth/wrong-password':'ãã¹ã¯ã¼ããæ­£ããããã¾ãã',
+    'auth/invalid-credential':'ã¡ã¼ã«ã¢ãã¬ã¹ã¾ãã¯ãã¹ã¯ã¼ããæ­£ããããã¾ãã',
+    'auth/email-already-in-use':'ãã®ã¡ã¼ã«ã¢ãã¬ã¹ã¯æ¢ã«ä½¿ç¨ããã¦ãã¾ã',
+    'auth/weak-password':'ãã¹ã¯ã¼ãã¯6æå­ä»¥ä¸',
+    'auth/too-many-requests':'è©¦è¡åæ°ãå¤ããã¾ãããã°ããå¾ã£ã¦ãã ãã',
+  })[code] || `ã¨ã©ã¼: ${code}`;
+}
+
+// ================================================================
+// RENDER
+// ================================================================
+function render() {
+  const app = el('app');
+  if (!app) return;
+
+  if (!configured()) { app.innerHTML = setupScreen(); return; }
+  if (S.view === 'loading') { app.innerHTML = `<div class="loading"><div class="spinner"></div>èª­ã¿è¾¼ã¿ä¸­...</div>`; return; }
+  if (S.view === 'login' || S.view === 'register') { authScreen(app); return; }
+
+  let body = '';
+  if (S.view === 'calendar')    body = calendarView();
+  else if (S.view === 'staff')  body = staffView();
+  else if (S.view === 'profile') body = profileView();
+
+  app.innerHTML = headerHTML() + `<div id="main">${body}</div>` + (S.modal ? modalHTML() : '');
+  bindEvents();
+}
+
+// ---- SETUP SCREEN ----
+function setupScreen() {
+  return `
+  <div class="setup-wrap"><div class="setup-card">
+    <h1>ð¥ ã¯ãªããã¯ ã·ããç®¡ç â åæè¨­å®</h1>
+    <p>ãã®ã¢ããªãä½¿ãã«ã¯ <strong>Firebase</strong>ï¼ç¡æï¼ã®ã»ããã¢ãããå¿è¦ã§ããä»¥ä¸ã®æé ãè¡ã£ã¦ãã ããã</p>
+
+    <div class="step"><div class="step-num">STEP 1</div>
+      <p><a href="https://console.firebase.google.com" target="_blank" style="color:var(--primary)">console.firebase.google.com</a> ã«ã¢ã¯ã»ã¹ããGoogleã¢ã«ã¦ã³ãã§ãµã¤ã³ã¤ã³å¾ããã­ã¸ã§ã¯ããè¿½å ããã¯ãªãã¯ããã­ã¸ã§ã¯ãåãå¥åãã¦ä½æã</p>
+    </div>
+
+    <div class="step"><div class="step-num">STEP 2 â Authentication ãæå¹å</div>
+      <p>å·¦ã¡ãã¥ã¼ãAuthenticationãâãå§ãããâãã¡ã¼ã«/ãã¹ã¯ã¼ãããæå¹ã«ãã¦ä¿å­ã</p>
+    </div>
+
+    <div class="step"><div class="step-num">STEP 3 â Firestore ãä½æ</div>
+      <p>å·¦ã¡ãã¥ã¼ãFirestore Databaseãâããã¼ã¿ãã¼ã¹ã®ä½æãâããã¹ãã¢ã¼ãã§éå§ãâãæå¹ã«ãããã</p>
+      <p>â ï¸ ãã®å¾ããã«ã¼ã«ãã¿ããéããä»¥ä¸ã®ã«ã¼ã«ã«æ¸ãæãã¦ãå¬éããã¦ãã ããï¼</p>
+      <pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+        || request.auth.uid == uid;
+    }
+    match /shifts/{id} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+  }
+}</pre>
+    </div>
+
+    <div class="step"><div class="step-num">STEP 4 â è¨­å®ã³ã¼ããåå¾</div>
+      <p>å·¦ã¡ãã¥ã¼ããã­ã¸ã§ã¯ãã®è¨­å®ï¼âæ­¯è»ï¼ãâããã¤ã¢ããªãâã&lt;/&gt; ã¦ã§ããã¢ã¤ã³ã³ãã¯ãªãã¯ â ã¢ããªåãå¥åãã¦ç»é²ã</p>
+      <p>è¡¨ç¤ºããã <code>firebaseConfig</code> ã®ã³ã¼ããã³ãã¼ãããã®HTMLãã¡ã¤ã«ã®åé ­ã«ãã <code>FIREBASE_CONFIG</code> ã®å¤ãæ¸ãæãã¦ãã ããã</p>
+    </div>
+
+    <div class="step"><div class="step-num">STEP 5 â ãã¹ãã£ã³ã°ï¼é¢åå¤ããã¢ã¯ã»ã¹ããããï¼</div>
+      <p>ãã®HTMLãã¡ã¤ã«ã <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--primary)">Netlify Drop</a> ã«ãã©ãã°ï¼ãã­ããããã ãã§ç¡æå¬éã§ãã¾ããURLãçºè¡ãããã®ã§ããã®URLãã¹ã¿ããã«å±æãã¦ãã ããã</p>
+    </div>
+
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem">è¨­å®å¾ãã®ãã¡ã¤ã«ãååº¦éãã¨èªåçã«ã­ã°ã¤ã³ç»é¢ãè¡¨ç¤ºããã¾ããæåã«ç»é²ããã¦ã¼ã¶ã¼ãèªåçã«ç®¡çèã«ãªãã¾ãã</p>
+  </div></div>`;
+}
+
+// ---- AUTH SCREEN ----
+function authScreen(app) {
+  const isReg = S.view === 'register';
+  const opts = ROLES.map(r => `<option value="${r}">${r}</option>`).join('');
+  app.innerHTML = `
+  <div class="auth-wrap"><div class="auth-card">
+    <div class="auth-title">ð¥ ã·ããç®¡ç</div>
+    ${S.err ? `<div class="msg-error">${S.err}</div>` : ''}
+    ${isReg ? `
+      <form id="af" onsubmit="doRegister(event)">
+        <div class="form-group"><label>ãåå</label><input class="form-input" id="rName" type="text" placeholder="å±±ç° å¤ªé" required></div>
+        <div class="form-group"><label>è·ç¨®</label>
+          <select class="form-select" id="rRole" required>
+            <option value="">é¸æãã¦ãã ãã</option>${opts}
+          </select>
+        </div>
+        <div class="form-group"><label>ã¡ã¼ã«ã¢ãã¬ã¹</label><input class="form-input" id="rEmail" type="email" required></div>
+        <div class="form-group"><label>ãã¹ã¯ã¼ãï¼6æå­ä»¥ä¸ï¼</label><input class="form-input" id="rPass" type="password" required></div>
+        <button class="btn btn-primary" ${S.busy?'disabled':''} type="submit">${S.busy?'ç»é²ä¸­...':'ã¢ã«ã¦ã³ãç»é²'}</button>
+        <div style="text-align:center;margin-top:0.75rem">
+          <button class="link-btn" onclick="goView('login')">ãã§ã«ã¢ã«ã¦ã³ãããæã¡ã®æ¹ã¯ãã¡ã</button>
+        </div>
+      </form>
+    ` : `
+      <form id="af" onsubmit="doLogin(event)">
+        <div class="form-group"><label>ã¡ã¼ã«ã¢ãã¬ã¹</label><input class="form-input" id="lEmail" type="email" required></div>
+        <div class="form-group"><label>ãã¹ã¯ã¼ã</label><input class="form-input" id="lPass" type="password" required></div>
+        <button class="btn btn-primary" ${S.busy?'disabled':''} type="submit">${S.busy?'ã­ã°ã¤ã³ä¸­...':'ã­ã°ã¤ã³'}</button>
+        <div style="text-align:center;margin-top:0.75rem">
+          <button class="link-btn" onclick="goView('register')">æ°è¦ç»é²ã¯ãã¡ã</button>
+        </div>
+      </form>
+    `}
+  </div></div>`;
+}
+
+// ---- HEADER ----
+function headerHTML() {
+  const isAdmin = S.userData?.isAdmin;
+  const name = S.userData?.name || '';
+  return `
+  <div class="header">
+    <div class="header-title">ð¥ ã·ããç®¡ç</div>
+    <div class="header-nav">
+      <button class="nav-btn ${S.view==='calendar'?'active':''}" onclick="goView('calendar')">ð ã«ã¬ã³ãã¼</button>
+      ${isAdmin ? `<button class="nav-btn ${S.view==='staff'?'active':''}" onclick="goView('staff')">ð¥ ã¹ã¿ãã</button>` : ''}
+      <button class="nav-btn ${S.view==='profile'?'active':''}" onclick="goView('profile')">ð¤ ${name}</button>
+    </div>
+  </div>`;
+}
+
+// ---- CALENDAR ----
+function calendarView() {
+  const { year: y, month: m } = S;
+  const total = daysIn(y, m);
+  const first = firstDow(y, m);
+  const isAdmin = S.userData?.isAdmin;
+  const myUid = S.user?.uid;
+  const mNames = ['1æ','2æ','3æ','4æ','5æ','6æ','7æ','8æ','9æ','10æ','11æ','12æ'];
+
+  let cells = '';
+  for (let i = 0; i < first; i++) cells += `<div class="cal-cell empty"></div>`;
+
+  for (let d = 1; d <= total; d++) {
+    const dow = new Date(y, m, d).getDay();
+    const dateKey = ds(y, m, d);
+    const slots = availableSlots(dow);
+    const closed = slots.length === 0;
+    const today = isToday(y, m, d);
+
+    let cls = 'cal-cell' + (closed?' closed':'') + (today?' today-cell':'');
+    let dowCls = dow===0?' s': dow===6?' sa':'';
+
+    let dayNumHTML = today
+      ? `<span class="today-circle">${d}</span>`
+      : `${d}`;
+
+    let inner = '';
+    if (closed) {
+      inner = '<div class="closed-lbl">ä¼è¨º</div>';
+    } else {
+      const sd = S.shifts[dateKey] || {};
+      for (const slot of slots) {
+        const list = sd[slot] || [];
+        const badges = list.map(s => {
+          const me = s.uid === myUid;
+          return `<span class="badge ${rc(s.role)}${me?' me':''}">${s.name}</span>`;
+        }).join('') || `<span class="empty-slot">æªå®</span>`;
+        inner += `<div class="slot-block"><div class="slot-lbl">${SLOT[slot].label}</div><div>${badges}</div></div>`;
+      }
+    }
+
+    const click = !closed ? `onclick="openModal('${dateKey}',${dow})"` : '';
+    cells += `<div class="${cls}" ${click}><div class="day-num${dowCls}">${dayNumHTML}</div>${inner}</div>`;
+  }
+
+  const legendHTML = ROLES.map(r =>
+    `<div class="legend-item"><span class="legend-dot" style="background:${ROLE_BG[r]||'#f1f5f9'}"></span>${r}</div>`
+  ).join('');
+
+  return `
+  <div class="cal-wrap">
+    <div class="cal-nav">
+      <button class="mn-btn" onclick="shiftMonth(-1)">â åæ</button>
+      <span class="cal-nav-title">${y}å¹´ ${mNames[m]}</span>
+      <button class="mn-btn" onclick="shiftMonth(1)">æ¬¡æ â¶</button>
+    </div>
+    <div class="legend">${legendHTML}</div>
+    <div class="cal-grid">
+      ${DOW_JP.map((d,i)=>`<div class="cal-dow${i===0?' s':i===6?' sa':''}">${d}</div>`).join('')}
+      ${cells}
+    </div>
+    <div style="margin-top:0.5rem;font-size:0.72rem;color:var(--muted);text-align:center">
+      ${isAdmin ? 'ð æ¥ä»ãã¯ãªãã¯ãã¦ã·ãããç·¨éã§ãã¾ãã|ãå¤ªæ ããã¸ï¼èªåã®ã·ãã' : 'æ¥ä»ãã¯ãªãã¯ãã¦è©³ç´°ãç¢ºèªã§ãã¾ãã|ãå¤ªæ ããã¸ï¼èªåã®ã·ãã'}
+    </div>
+  </div>`;
+}
+
+// ---- DAY MODAL ----
+function modalHTML() {
+  const { date, dow } = S.modal;
+  const slots = availableSlots(dow);
+  const sd = S.shifts[date] || {};
+  const isAdmin = S.userData?.isAdmin;
+  const myUid = S.user?.uid;
+  const [y,mo,d] = date.split('-');
+  const label = `${y}å¹´${parseInt(mo)}æ${parseInt(d)}æ¥ï¼${DOW_JP[dow]}ï¼`;
+
+  let html = '';
+  for (const slot of slots) {
+    const list = sd[slot] || [];
+    const rows = list.map(s => {
+      const me = s.uid === myUid;
+      return `<div class="staff-row">
+        <div class="staff-left">
+          <span class="badge modal-badge ${rc(s.role)}">${s.name}</span>
+          <span style="font-size:0.72rem;color:var(--muted)">${s.role}</span>
+          ${me?'<span style="font-size:0.65rem;color:var(--primary);font-weight:700">(èªå)</span>':''}
+        </div>
+        ${isAdmin?`<button class="btn btn-danger btn-xs" onclick="rmStaff('${date}','${slot}','${s.uid}')">åé¤</button>`:''}
+      </div>`;
+    }).join('') || `<div style="font-size:0.78rem;color:#94a3b8;padding:0.2rem 0">æªå²ãå½ã¦</div>`;
+
+    let addForm = '';
+    if (isAdmin) {
+      const avail = S.staff.filter(x => !list.find(a => a.uid === x.uid));
+      const opts = avail.map(x => `<option value="${x.uid}">${x.name}ï¼${x.role}ï¼</option>`).join('');
+      addForm = `<div class="add-row">
+        <select class="add-sel" id="sel_${slot}"><option value="">ã¹ã¿ãããé¸æ...</option>${opts}</select>
+        <button class="btn btn-secondary btn-sm" onclick="addStaff('${date}','${slot}')">è¿½å </button>
+      </div>`;
+    }
+
+    html += `<div class="slot-section">
+      <div class="slot-head">${SLOT[slot].icon} ${SLOT[slot].label} <span class="slot-time">${SLOT[slot].time}</span></div>
+      ${rows}
+      ${addForm}
+    </div>`;
+  }
+
+  return `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-title">
+        ð ${label}
+        <button class="modal-close" onclick="closeModal()">â</button>
+      </div>
+      ${html}
+      <div style="text-align:right;margin-top:0.75rem">
+        <button class="btn btn-secondary" onclick="closeModal()">éãã</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---- STAFF VIEW ----
+function staffView() {
+  const rows = S.staff.map(s => `<tr>
+    <td>${s.name}</td>
+    <td><span class="badge ${rc(s.role)}">${s.role}</span></td>
+    <td style="font-size:0.75rem">${s.email}</td>
+    <td><span class="tag ${s.isAdmin?'tag-admin':'tag-staff'}">${s.isAdmin?'ç®¡çè':'ã¹ã¿ãã'}</span></td>
+    <td>
+      <button class="btn btn-secondary btn-xs" onclick="toggleAdmin('${s.uid}',${s.isAdmin})" style="margin-right:3px">
+        ${s.isAdmin?'æ¨©éè§£é¤':'ç®¡çèã«'}
+      </button>
+      <button class="btn btn-danger btn-xs" onclick="delStaff('${s.uid}')">åé¤</button>
+    </td>
+  </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:1rem">ã¹ã¿ãããç»é²ããã¦ãã¾ãã</td></tr>`;
+
+  return `
+  <div class="staff-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+      <div class="staff-head">ð¥ ã¹ã¿ããç®¡ç</div>
+      <span style="font-size:0.78rem;color:var(--muted)">${S.staff.length}åç»é²</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="staff-tbl">
+        <thead><tr><th>æ°å</th><th>è·ç¨®</th><th>ã¡ã¼ã«</th><th>æ¨©é</th><th>æä½</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:0.75rem;background:#f8fafc;border-radius:8px;padding:0.65rem 0.85rem;font-size:0.77rem;color:var(--muted);border:1px solid var(--border)">
+      ð¡ ã¹ã¿ãããèªåã§ã¢ã«ã¦ã³ãç»é²å¾ããã§ç®¡çèæ¨©éãä»ä¸ã§ãã¾ããæåã«ç»é²ããã¦ã¼ã¶ã¼ã¯èªåçã«ç®¡çèã«ãªãã¾ãã
+    </div>
+  </div>`;
+}
+
+// ---- PROFILE VIEW ----
+function profileView() {
+  const u = S.userData;
+  if (!u) return '<div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div>';
+  const { year: y, month: m } = S;
+  const myUid = S.user?.uid;
+  const mNames = ['1æ','2æ','3æ','4æ','5æ','6æ','7æ','8æ','9æ','10æ','11æ','12æ'];
+
+  let myShifts = [];
+  for (let d = 1; d <= daysIn(y,m); d++) {
+    const dateKey = ds(y,m,d);
+    const dow = new Date(y,m,d).getDay();
+    const sd = S.shifts[dateKey] || {};
+    for (const slot of ['morning','afternoon']) {
+      if ((sd[slot]||[]).find(x => x.uid === myUid)) {
+        myShifts.push({ d, dow, slot });
+      }
+    }
+  }
+
+  const shiftHTML = myShifts.length
+    ? myShifts.map(s => `
+        <div class="my-shift-item">
+          <span style="font-weight:700;min-width:2rem">${s.d}æ¥</span>
+          <span style="color:var(--muted);font-size:0.75rem">${DOW_JP[s.dow]}</span>
+          <span class="slot-tag ${s.slot==='morning'?'slot-am':'slot-pm'}">${SLOT[s.slot].label} ${SLOT[s.slot].time}</span>
+        </div>`).join('')
+    : `<div style="color:#94a3b8;font-size:0.82rem">ä»æã®ã·ããã¯ã¾ã å²ãå½ã¦ããã¦ãã¾ãã</div>`;
+
+  return `
+  <div class="prof-wrap">
+    <div class="prof-card">
+      <div class="prof-title">ãã­ãã£ã¼ã«</div>
+      <div class="info-row"><span class="info-key">æ°å</span><span class="info-val">${u.name}</span></div>
+      <div class="info-row"><span class="info-key">è·ç¨®</span><span class="badge ${rc(u.role)}">${u.role}</span></div>
+      <div class="info-row"><span class="info-key">æ¨©é</span><span class="info-val">${u.isAdmin?'ð ç®¡çè':'ð¤ ã¹ã¿ãã'}</span></div>
+      <div class="info-row"><span class="info-key">ã¡ã¼ã«</span><span style="font-size:0.78rem">${u.email}</span></div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:1rem" onclick="doLogout()">ã­ã°ã¢ã¦ã</button>
+    </div>
+    <div class="prof-card">
+      <div class="prof-title">ð ${y}å¹´${mNames[m]}ã®ã·ããï¼${myShifts.length}ä»¶ï¼</div>
+      ${shiftHTML}
+    </div>
+  </div>`;
+}
+
+// ================================================================
+// UI ACTIONS
+// ================================================================
+function goView(v) {
+  if (v === 'staff') loadStaff();
+  S.view = v;
+  render();
+}
+
+function shiftMonth(delta) {
+  S.month += delta;
+  if (S.month < 0) { S.month = 11; S.year--; }
+  if (S.month > 11) { S.month = 0; S.year++; }
+  loadShifts(S.year, S.month);
+}
+
+function openModal(date, dow) {
+  S.modal = { date, dow };
+  render();
+}
+
+function closeModal() {
+  S.modal = null;
+  render();
+}
+
+async function addStaff(date, slot) {
+  const sel = el(`sel_${slot}`);
+  if (!sel || !sel.value) return;
+  const member = S.staff.find(x => x.uid === sel.value);
+  if (!member) return;
+  const btn = sel.nextElementSibling;
+  if (btn) { btn.disabled = true; btn.textContent = 'è¿½å ä¸­...'; }
+  await addToShift(date, slot, { uid: member.uid, name: member.name, role: member.role });
+  render();
+}
+
+async function rmStaff(date, slot, uid) {
+  await removeFromShift(date, slot, uid);
+  render();
+}
+
+async function toggleAdmin(uid, cur) {
+  await db.collection('users').doc(uid).update({ isAdmin: !cur });
+  const idx = S.staff.findIndex(x => x.uid === uid);
+  if (idx >= 0) S.staff[idx].isAdmin = !cur;
+  render();
+}
+
+async function delStaff(uid) {
+  if (!confirm('ãã®ã¹ã¿ãããåé¤ãã¾ããï¼')) return;
+  await db.collection('users').doc(uid).delete();
+  S.staff = S.staff.filter(x => x.uid !== uid);
+  render();
+}
+
+function bindEvents() {
+  document.onkeydown = e => { if (e.key === 'Escape' && S.modal) closeModal(); };
+}
+
+// ================================================================
+// BOOT
+// ================================================================
+if (configured()) {
+  auth.onAuthStateChanged(async user => {
+    if (user) {
+      S.user = user;
+      try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (doc.exists) S.userData = doc.data();
+      } catch(e) { console.error(e); }
+      S.view = 'calendar';
+      S.busy = false;
+      await loadShifts(S.year, S.month);
+    } else {
+      Object.assign(S, { user: null, userData: null, view: 'login', busy: false });
+      render();
+    }
+  });
+} else {
+  S.view = 'setup';
+  render();
+}
+</script>
+</body>
+</html>
