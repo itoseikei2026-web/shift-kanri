@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ã¯ãªããã¯ ã·ããç®¡ç</title>
+  <title>クリニック シフト管理</title>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -249,12 +249,12 @@
 <body>
 
 <div id="app">
-  <div class="loading"><div class="spinner"></div>èª­ã¿è¾¼ã¿ä¸­...</div>
+  <div class="loading"><div class="spinner"></div>読み込み中...</div>
 </div>
 
 <script>
 // ================================================================
-// â STEP 1: Firebase ã®è¨­å®ãããã«è²¼ãä»ãã¦ãã ãã â
+// ★ STEP 1: Firebase の設定をここに貼り付けてください ★
 // ================================================================
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyA5-U8hRAnn4Wmuar6NVzSRY9S4a3TCvcE",
@@ -267,23 +267,23 @@ const FIREBASE_CONFIG = {
 // ================================================================
 
 // ================================================================
-// å®æ°
+// 定数
 // ================================================================
-const ROLES = ['å»å¸«', 'äºå', 'çè­·å¸«', 'æå¸«', 'çå­¦çæ³å£«'];
-const ROLE_CSS = { 'å»å¸«':'r-doc', 'äºå':'r-adm', 'çè­·å¸«':'r-nur', 'æå¸«':'r-tec', 'çå­¦çæ³å£«':'r-pt' };
-const ROLE_BG  = { 'å»å¸«':'#dbeafe', 'äºå':'#dcfce7', 'çè­·å¸«':'#fce7f3', 'æå¸«':'#fef9c3', 'çå­¦çæ³å£«':'#f3e8ff' };
-const DOW_JP = ['æ¥','æ','ç«','æ°´','æ¨','é','å'];
+const ROLES = ['医師', '事務', '看護師', '技師', '理学療法士'];
+const ROLE_CSS = { '医師':'r-doc', '事務':'r-adm', '看護師':'r-nur', '技師':'r-tec', '理学療法士':'r-pt' };
+const ROLE_BG  = { '医師':'#dbeafe', '事務':'#dcfce7', '看護師':'#fce7f3', '技師':'#fef9c3', '理学療法士':'#f3e8ff' };
+const DOW_JP = ['日','月','火','水','木','金','土'];
 
-// è¨ºçã·ããå®ç¾©
-// 0=æ¥ï¼ä¼è¨ºï¼, 1=æ, 2=ç«ï¼ååã®ã¿ï¼, 3=æ°´, 4=æ¨, 5=é, 6=å
+// 診療シフト定義
+// 0=日（休診）, 1=月, 2=火（午前のみ）, 3=水, 4=木, 5=金, 6=土
 function availableSlots(dow) {
   if (dow === 0) return [];
   if (dow === 2) return ['morning'];
   return ['morning','afternoon'];
 }
 const SLOT = {
-  morning:   { label:'åå', time:'8:40ã13:40',  icon:'ð' },
-  afternoon: { label:'åå¾', time:'15:00ã19:30', icon:'ð' }
+  morning:   { label:'午前', time:'8:40〜13:40',  icon:'🌅' },
+  afternoon: { label:'午後', time:'15:00〜19:30', icon:'🌆' }
 };
 
 // ================================================================
@@ -381,8 +381,8 @@ async function doRegister(e) {
   const role = el('rRole').value;
   const email = el('rEmail').value.trim();
   const pass = el('rPass').value;
-  if (!name||!role||!email||!pass) { S.busy=false; S.err='ãã¹ã¦ã®é ç®ãå¥åãã¦ãã ãã'; render(); return; }
-  if (pass.length < 6) { S.busy=false; S.err='ãã¹ã¯ã¼ãã¯6æå­ä»¥ä¸'; render(); return; }
+  if (!name||!role||!email||!pass) { S.busy=false; S.err='すべての項目を入力してください'; render(); return; }
+  if (pass.length < 6) { S.busy=false; S.err='パスワードは6文字以上'; render(); return; }
   try {
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
     const snap = await db.collection('users').get();
@@ -401,13 +401,13 @@ async function doLogout() {
 
 function authMsg(code) {
   return ({
-    'auth/user-not-found':'ã¡ã¼ã«ã¢ãã¬ã¹ãè¦ã¤ããã¾ãã',
-    'auth/wrong-password':'ãã¹ã¯ã¼ããæ­£ããããã¾ãã',
-    'auth/invalid-credential':'ã¡ã¼ã«ã¢ãã¬ã¹ã¾ãã¯ãã¹ã¯ã¼ããæ­£ããããã¾ãã',
-    'auth/email-already-in-use':'ãã®ã¡ã¼ã«ã¢ãã¬ã¹ã¯æ¢ã«ä½¿ç¨ããã¦ãã¾ã',
-    'auth/weak-password':'ãã¹ã¯ã¼ãã¯6æå­ä»¥ä¸',
-    'auth/too-many-requests':'è©¦è¡åæ°ãå¤ããã¾ãããã°ããå¾ã£ã¦ãã ãã',
-  })[code] || `ã¨ã©ã¼: ${code}`;
+    'auth/user-not-found':'メールアドレスが見つかりません',
+    'auth/wrong-password':'パスワードが正しくありません',
+    'auth/invalid-credential':'メールアドレスまたはパスワードが正しくありません',
+    'auth/email-already-in-use':'このメールアドレスは既に使用されています',
+    'auth/weak-password':'パスワードは6文字以上',
+    'auth/too-many-requests':'試行回数が多すぎます。しばらく待ってください',
+  })[code] || `エラー: ${code}`;
 }
 
 // ================================================================
@@ -418,7 +418,7 @@ function render() {
   if (!app) return;
 
   if (!configured()) { app.innerHTML = setupScreen(); return; }
-  if (S.view === 'loading') { app.innerHTML = `<div class="loading"><div class="spinner"></div>èª­ã¿è¾¼ã¿ä¸­...</div>`; return; }
+  if (S.view === 'loading') { app.innerHTML = `<div class="loading"><div class="spinner"></div>読み込み中...</div>`; return; }
   if (S.view === 'login' || S.view === 'register') { authScreen(app); return; }
 
   let body = '';
@@ -434,20 +434,20 @@ function render() {
 function setupScreen() {
   return `
   <div class="setup-wrap"><div class="setup-card">
-    <h1>ð¥ ã¯ãªããã¯ ã·ããç®¡ç â åæè¨­å®</h1>
-    <p>ãã®ã¢ããªãä½¿ãã«ã¯ <strong>Firebase</strong>ï¼ç¡æï¼ã®ã»ããã¢ãããå¿è¦ã§ããä»¥ä¸ã®æé ãè¡ã£ã¦ãã ããã</p>
+    <h1>🏥 クリニック シフト管理 — 初期設定</h1>
+    <p>このアプリを使うには <strong>Firebase</strong>（無料）のセットアップが必要です。以下の手順を行ってください。</p>
 
     <div class="step"><div class="step-num">STEP 1</div>
-      <p><a href="https://console.firebase.google.com" target="_blank" style="color:var(--primary)">console.firebase.google.com</a> ã«ã¢ã¯ã»ã¹ããGoogleã¢ã«ã¦ã³ãã§ãµã¤ã³ã¤ã³å¾ããã­ã¸ã§ã¯ããè¿½å ããã¯ãªãã¯ããã­ã¸ã§ã¯ãåãå¥åãã¦ä½æã</p>
+      <p><a href="https://console.firebase.google.com" target="_blank" style="color:var(--primary)">console.firebase.google.com</a> にアクセスし、Googleアカウントでサインイン後「プロジェクトを追加」をクリック。プロジェクト名を入力して作成。</p>
     </div>
 
-    <div class="step"><div class="step-num">STEP 2 â Authentication ãæå¹å</div>
-      <p>å·¦ã¡ãã¥ã¼ãAuthenticationãâãå§ãããâãã¡ã¼ã«/ãã¹ã¯ã¼ãããæå¹ã«ãã¦ä¿å­ã</p>
+    <div class="step"><div class="step-num">STEP 2 — Authentication を有効化</div>
+      <p>左メニュー「Authentication」→「始める」→「メール/パスワード」を有効にして保存。</p>
     </div>
 
-    <div class="step"><div class="step-num">STEP 3 â Firestore ãä½æ</div>
-      <p>å·¦ã¡ãã¥ã¼ãFirestore Databaseãâããã¼ã¿ãã¼ã¹ã®ä½æãâããã¹ãã¢ã¼ãã§éå§ãâãæå¹ã«ãããã</p>
-      <p>â ï¸ ãã®å¾ããã«ã¼ã«ãã¿ããéããä»¥ä¸ã®ã«ã¼ã«ã«æ¸ãæãã¦ãå¬éããã¦ãã ããï¼</p>
+    <div class="step"><div class="step-num">STEP 3 — Firestore を作成</div>
+      <p>左メニュー「Firestore Database」→「データベースの作成」→「テストモードで開始」→「有効にする」。</p>
+      <p>⚠️ その後、「ルール」タブを開き、以下のルールに書き換えて「公開」してください：</p>
       <pre>rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -467,16 +467,16 @@ service cloud.firestore {
 }</pre>
     </div>
 
-    <div class="step"><div class="step-num">STEP 4 â è¨­å®ã³ã¼ããåå¾</div>
-      <p>å·¦ã¡ãã¥ã¼ããã­ã¸ã§ã¯ãã®è¨­å®ï¼âæ­¯è»ï¼ãâããã¤ã¢ããªãâã&lt;/&gt; ã¦ã§ããã¢ã¤ã³ã³ãã¯ãªãã¯ â ã¢ããªåãå¥åãã¦ç»é²ã</p>
-      <p>è¡¨ç¤ºããã <code>firebaseConfig</code> ã®ã³ã¼ããã³ãã¼ãããã®HTMLãã¡ã¤ã«ã®åé ­ã«ãã <code>FIREBASE_CONFIG</code> ã®å¤ãæ¸ãæãã¦ãã ããã</p>
+    <div class="step"><div class="step-num">STEP 4 — 設定コードを取得</div>
+      <p>左メニュー「プロジェクトの設定（⚙歯車）」→「マイアプリ」→「&lt;/&gt; ウェブ」アイコンをクリック → アプリ名を入力して登録。</p>
+      <p>表示された <code>firebaseConfig</code> のコードをコピーし、このHTMLファイルの先頭にある <code>FIREBASE_CONFIG</code> の値を書き換えてください。</p>
     </div>
 
-    <div class="step"><div class="step-num">STEP 5 â ãã¹ãã£ã³ã°ï¼é¢åå¤ããã¢ã¯ã»ã¹ããããï¼</div>
-      <p>ãã®HTMLãã¡ã¤ã«ã <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--primary)">Netlify Drop</a> ã«ãã©ãã°ï¼ãã­ããããã ãã§ç¡æå¬éã§ãã¾ããURLãçºè¡ãããã®ã§ããã®URLãã¹ã¿ããã«å±æãã¦ãã ããã</p>
+    <div class="step"><div class="step-num">STEP 5 — ホスティング（院内外からアクセスするため）</div>
+      <p>このHTMLファイルを <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--primary)">Netlify Drop</a> にドラッグ＆ドロップするだけで無料公開できます。URLが発行されるので、そのURLをスタッフに共有してください。</p>
     </div>
 
-    <p style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem">è¨­å®å¾ãã®ãã¡ã¤ã«ãååº¦éãã¨èªåçã«ã­ã°ã¤ã³ç»é¢ãè¡¨ç¤ºããã¾ããæåã«ç»é²ããã¦ã¼ã¶ã¼ãèªåçã«ç®¡çèã«ãªãã¾ãã</p>
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem">設定後このファイルを再度開くと自動的にログイン画面が表示されます。最初に登録したユーザーが自動的に管理者になります。</p>
   </div></div>`;
 }
 
@@ -486,30 +486,30 @@ function authScreen(app) {
   const opts = ROLES.map(r => `<option value="${r}">${r}</option>`).join('');
   app.innerHTML = `
   <div class="auth-wrap"><div class="auth-card">
-    <div class="auth-title">ð¥ ã·ããç®¡ç</div>
+    <div class="auth-title">🏥 シフト管理</div>
     ${S.err ? `<div class="msg-error">${S.err}</div>` : ''}
     ${isReg ? `
       <form id="af" onsubmit="doRegister(event)">
-        <div class="form-group"><label>ãåå</label><input class="form-input" id="rName" type="text" placeholder="å±±ç° å¤ªé" required></div>
-        <div class="form-group"><label>è·ç¨®</label>
+        <div class="form-group"><label>お名前</label><input class="form-input" id="rName" type="text" placeholder="山田 太郎" required></div>
+        <div class="form-group"><label>職種</label>
           <select class="form-select" id="rRole" required>
-            <option value="">é¸æãã¦ãã ãã</option>${opts}
+            <option value="">選択してください</option>${opts}
           </select>
         </div>
-        <div class="form-group"><label>ã¡ã¼ã«ã¢ãã¬ã¹</label><input class="form-input" id="rEmail" type="email" required></div>
-        <div class="form-group"><label>ãã¹ã¯ã¼ãï¼6æå­ä»¥ä¸ï¼</label><input class="form-input" id="rPass" type="password" required></div>
-        <button class="btn btn-primary" ${S.busy?'disabled':''} type="submit">${S.busy?'ç»é²ä¸­...':'ã¢ã«ã¦ã³ãç»é²'}</button>
+        <div class="form-group"><label>メールアドレス</label><input class="form-input" id="rEmail" type="email" required></div>
+        <div class="form-group"><label>パスワード（6文字以上）</label><input class="form-input" id="rPass" type="password" required></div>
+        <button class="btn btn-primary" ${S.busy?'disabled':''} type="submit">${S.busy?'登録中...':'アカウント登録'}</button>
         <div style="text-align:center;margin-top:0.75rem">
-          <button class="link-btn" onclick="goView('login')">ãã§ã«ã¢ã«ã¦ã³ãããæã¡ã®æ¹ã¯ãã¡ã</button>
+          <button class="link-btn" onclick="goView('login')">すでにアカウントをお持ちの方はこちら</button>
         </div>
       </form>
     ` : `
       <form id="af" onsubmit="doLogin(event)">
-        <div class="form-group"><label>ã¡ã¼ã«ã¢ãã¬ã¹</label><input class="form-input" id="lEmail" type="email" required></div>
-        <div class="form-group"><label>ãã¹ã¯ã¼ã</label><input class="form-input" id="lPass" type="password" required></div>
-        <button class="btn btn-primary" ${S.busy?'disabled':''} type="submit">${S.busy?'ã­ã°ã¤ã³ä¸­...':'ã­ã°ã¤ã³'}</button>
+        <div class="form-group"><label>メールアドレス</label><input class="form-input" id="lEmail" type="email" required></div>
+        <div class="form-group"><label>パスワード</label><input class="form-input" id="lPass" type="password" required></div>
+        <button class="btn btn-primary" ${S.busy?'disabled':''} type="submit">${S.busy?'ログイン中...':'ログイン'}</button>
         <div style="text-align:center;margin-top:0.75rem">
-          <button class="link-btn" onclick="goView('register')">æ°è¦ç»é²ã¯ãã¡ã</button>
+          <button class="link-btn" onclick="goView('register')">新規登録はこちら</button>
         </div>
       </form>
     `}
@@ -522,11 +522,11 @@ function headerHTML() {
   const name = S.userData?.name || '';
   return `
   <div class="header">
-    <div class="header-title">ð¥ ã·ããç®¡ç</div>
+    <div class="header-title">🏥 シフト管理</div>
     <div class="header-nav">
-      <button class="nav-btn ${S.view==='calendar'?'active':''}" onclick="goView('calendar')">ð ã«ã¬ã³ãã¼</button>
-      ${isAdmin ? `<button class="nav-btn ${S.view==='staff'?'active':''}" onclick="goView('staff')">ð¥ ã¹ã¿ãã</button>` : ''}
-      <button class="nav-btn ${S.view==='profile'?'active':''}" onclick="goView('profile')">ð¤ ${name}</button>
+      <button class="nav-btn ${S.view==='calendar'?'active':''}" onclick="goView('calendar')">📅 カレンダー</button>
+      ${isAdmin ? `<button class="nav-btn ${S.view==='staff'?'active':''}" onclick="goView('staff')">👥 スタッフ</button>` : ''}
+      <button class="nav-btn ${S.view==='profile'?'active':''}" onclick="goView('profile')">👤 ${name}</button>
     </div>
   </div>`;
 }
@@ -538,7 +538,7 @@ function calendarView() {
   const first = firstDow(y, m);
   const isAdmin = S.userData?.isAdmin;
   const myUid = S.user?.uid;
-  const mNames = ['1æ','2æ','3æ','4æ','5æ','6æ','7æ','8æ','9æ','10æ','11æ','12æ'];
+  const mNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
   let cells = '';
   for (let i = 0; i < first; i++) cells += `<div class="cal-cell empty"></div>`;
@@ -559,7 +559,7 @@ function calendarView() {
 
     let inner = '';
     if (closed) {
-      inner = '<div class="closed-lbl">ä¼è¨º</div>';
+      inner = '<div class="closed-lbl">休診</div>';
     } else {
       const sd = S.shifts[dateKey] || {};
       for (const slot of slots) {
@@ -567,7 +567,7 @@ function calendarView() {
         const badges = list.map(s => {
           const me = s.uid === myUid;
           return `<span class="badge ${rc(s.role)}${me?' me':''}">${s.name}</span>`;
-        }).join('') || `<span class="empty-slot">æªå®</span>`;
+        }).join('') || `<span class="empty-slot">未定</span>`;
         inner += `<div class="slot-block"><div class="slot-lbl">${SLOT[slot].label}</div><div>${badges}</div></div>`;
       }
     }
@@ -583,9 +583,9 @@ function calendarView() {
   return `
   <div class="cal-wrap">
     <div class="cal-nav">
-      <button class="mn-btn" onclick="shiftMonth(-1)">â åæ</button>
-      <span class="cal-nav-title">${y}å¹´ ${mNames[m]}</span>
-      <button class="mn-btn" onclick="shiftMonth(1)">æ¬¡æ â¶</button>
+      <button class="mn-btn" onclick="shiftMonth(-1)">◀ 前月</button>
+      <span class="cal-nav-title">${y}年 ${mNames[m]}</span>
+      <button class="mn-btn" onclick="shiftMonth(1)">次月 ▶</button>
     </div>
     <div class="legend">${legendHTML}</div>
     <div class="cal-grid">
@@ -593,7 +593,7 @@ function calendarView() {
       ${cells}
     </div>
     <div style="margin-top:0.5rem;font-size:0.72rem;color:var(--muted);text-align:center">
-      ${isAdmin ? 'ð æ¥ä»ãã¯ãªãã¯ãã¦ã·ãããç·¨éã§ãã¾ãã|ãå¤ªæ ããã¸ï¼èªåã®ã·ãã' : 'æ¥ä»ãã¯ãªãã¯ãã¦è©³ç´°ãç¢ºèªã§ãã¾ãã|ãå¤ªæ ããã¸ï¼èªåã®ã·ãã'}
+      ${isAdmin ? '📝 日付をクリックしてシフトを編集できます　|　太枠バッジ＝自分のシフト' : '日付をクリックして詳細を確認できます　|　太枠バッジ＝自分のシフト'}
     </div>
   </div>`;
 }
@@ -606,7 +606,7 @@ function modalHTML() {
   const isAdmin = S.userData?.isAdmin;
   const myUid = S.user?.uid;
   const [y,mo,d] = date.split('-');
-  const label = `${y}å¹´${parseInt(mo)}æ${parseInt(d)}æ¥ï¼${DOW_JP[dow]}ï¼`;
+  const label = `${y}年${parseInt(mo)}月${parseInt(d)}日（${DOW_JP[dow]}）`;
 
   let html = '';
   for (const slot of slots) {
@@ -617,19 +617,19 @@ function modalHTML() {
         <div class="staff-left">
           <span class="badge modal-badge ${rc(s.role)}">${s.name}</span>
           <span style="font-size:0.72rem;color:var(--muted)">${s.role}</span>
-          ${me?'<span style="font-size:0.65rem;color:var(--primary);font-weight:700">(èªå)</span>':''}
+          ${me?'<span style="font-size:0.65rem;color:var(--primary);font-weight:700">(自分)</span>':''}
         </div>
-        ${isAdmin?`<button class="btn btn-danger btn-xs" onclick="rmStaff('${date}','${slot}','${s.uid}')">åé¤</button>`:''}
+        ${isAdmin?`<button class="btn btn-danger btn-xs" onclick="rmStaff('${date}','${slot}','${s.uid}')">削除</button>`:''}
       </div>`;
-    }).join('') || `<div style="font-size:0.78rem;color:#94a3b8;padding:0.2rem 0">æªå²ãå½ã¦</div>`;
+    }).join('') || `<div style="font-size:0.78rem;color:#94a3b8;padding:0.2rem 0">未割り当て</div>`;
 
     let addForm = '';
     if (isAdmin) {
       const avail = S.staff.filter(x => !list.find(a => a.uid === x.uid));
-      const opts = avail.map(x => `<option value="${x.uid}">${x.name}ï¼${x.role}ï¼</option>`).join('');
+      const opts = avail.map(x => `<option value="${x.uid}">${x.name}（${x.role}）</option>`).join('');
       addForm = `<div class="add-row">
-        <select class="add-sel" id="sel_${slot}"><option value="">ã¹ã¿ãããé¸æ...</option>${opts}</select>
-        <button class="btn btn-secondary btn-sm" onclick="addStaff('${date}','${slot}')">è¿½å </button>
+        <select class="add-sel" id="sel_${slot}"><option value="">スタッフを選択...</option>${opts}</select>
+        <button class="btn btn-secondary btn-sm" onclick="addStaff('${date}','${slot}')">追加</button>
       </div>`;
     }
 
@@ -644,12 +644,12 @@ function modalHTML() {
   <div class="overlay" onclick="if(event.target===this)closeModal()">
     <div class="modal">
       <div class="modal-title">
-        ð ${label}
-        <button class="modal-close" onclick="closeModal()">â</button>
+        📅 ${label}
+        <button class="modal-close" onclick="closeModal()">✕</button>
       </div>
       ${html}
       <div style="text-align:right;margin-top:0.75rem">
-        <button class="btn btn-secondary" onclick="closeModal()">éãã</button>
+        <button class="btn btn-secondary" onclick="closeModal()">閉じる</button>
       </div>
     </div>
   </div>`;
@@ -661,29 +661,29 @@ function staffView() {
     <td>${s.name}</td>
     <td><span class="badge ${rc(s.role)}">${s.role}</span></td>
     <td style="font-size:0.75rem">${s.email}</td>
-    <td><span class="tag ${s.isAdmin?'tag-admin':'tag-staff'}">${s.isAdmin?'ç®¡çè':'ã¹ã¿ãã'}</span></td>
+    <td><span class="tag ${s.isAdmin?'tag-admin':'tag-staff'}">${s.isAdmin?'管理者':'スタッフ'}</span></td>
     <td>
       <button class="btn btn-secondary btn-xs" onclick="toggleAdmin('${s.uid}',${s.isAdmin})" style="margin-right:3px">
-        ${s.isAdmin?'æ¨©éè§£é¤':'ç®¡çèã«'}
+        ${s.isAdmin?'権限解除':'管理者に'}
       </button>
-      <button class="btn btn-danger btn-xs" onclick="delStaff('${s.uid}')">åé¤</button>
+      <button class="btn btn-danger btn-xs" onclick="delStaff('${s.uid}')">削除</button>
     </td>
-  </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:1rem">ã¹ã¿ãããç»é²ããã¦ãã¾ãã</td></tr>`;
+  </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:1rem">スタッフが登録されていませこ</td></tr>`;
 
   return `
   <div class="staff-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
-      <div class="staff-head">ð¥ ã¹ã¿ããç®¡ç</div>
-      <span style="font-size:0.78rem;color:var(--muted)">${S.staff.length}åç»é²</span>
+      <div class="staff-head">👥 スタッフ管理</div>
+      <span style="font-size:0.78rem;color:var(--muted)">${S.staff.length}名登録</span>
     </div>
     <div style="overflow-x:auto">
       <table class="staff-tbl">
-        <thead><tr><th>æ°å</th><th>è·ç¨®</th><th>ã¡ã¼ã«</th><th>æ¨©é</th><th>æä½</th></tr></thead>
+        <thead><tr><th>氏名</th><th>職種</th><th>メール</th><th>権限</th><th>操作</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
     <div style="margin-top:0.75rem;background:#f8fafc;border-radius:8px;padding:0.65rem 0.85rem;font-size:0.77rem;color:var(--muted);border:1px solid var(--border)">
-      ð¡ ã¹ã¿ãããèªåã§ã¢ã«ã¦ã³ãç»é²å¾ããã§ç®¡çèæ¨©éãä»ä¸ã§ãã¾ããæåã«ç»é²ããã¦ã¼ã¶ã¼ã¯èªåçã«ç®¡çèã«ãªãã¾ãã
+      💡 スタッフが自分でアカウント登録後、ここで管理者権限を付与できます。最初に登録したユーザーは自動的に管理者になります。
     </div>
   </div>`;
 }
@@ -691,10 +691,10 @@ function staffView() {
 // ---- PROFILE VIEW ----
 function profileView() {
   const u = S.userData;
-  if (!u) return '<div class="loading">èª­ã¿è¾¼ã¿ä¸­...</div>';
+  if (!u) return '<div class="loading">読み込み中...</div>';
   const { year: y, month: m } = S;
   const myUid = S.user?.uid;
-  const mNames = ['1æ','2æ','3æ','4æ','5æ','6æ','7æ','8æ','9æ','10æ','11æ','12æ'];
+  const mNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
   let myShifts = [];
   for (let d = 1; d <= daysIn(y,m); d++) {
@@ -711,24 +711,24 @@ function profileView() {
   const shiftHTML = myShifts.length
     ? myShifts.map(s => `
         <div class="my-shift-item">
-          <span style="font-weight:700;min-width:2rem">${s.d}æ¥</span>
+          <span style="font-weight:700;min-width:2rem">${s.d}日</span>
           <span style="color:var(--muted);font-size:0.75rem">${DOW_JP[s.dow]}</span>
           <span class="slot-tag ${s.slot==='morning'?'slot-am':'slot-pm'}">${SLOT[s.slot].label} ${SLOT[s.slot].time}</span>
         </div>`).join('')
-    : `<div style="color:#94a3b8;font-size:0.82rem">ä»æã®ã·ããã¯ã¾ã å²ãå½ã¦ããã¦ãã¾ãã</div>`;
+    : `<div style="color:#94a3b8;font-size:0.82rem">今月のシフトはまだ割り当てられていませこ</div>`;
 
   return `
   <div class="prof-wrap">
     <div class="prof-card">
-      <div class="prof-title">ãã­ãã£ã¼ã«</div>
-      <div class="info-row"><span class="info-key">æ°å</span><span class="info-val">${u.name}</span></div>
-      <div class="info-row"><span class="info-key">è·ç¨®</span><span class="badge ${rc(u.role)}">${u.role}</span></div>
-      <div class="info-row"><span class="info-key">æ¨©é</span><span class="info-val">${u.isAdmin?'ð ç®¡çè':'ð¤ ã¹ã¿ãã'}</span></div>
-      <div class="info-row"><span class="info-key">ã¡ã¼ã«</span><span style="font-size:0.78rem">${u.email}</span></div>
-      <button class="btn btn-secondary" style="width:100%;margin-top:1rem" onclick="doLogout()">ã­ã°ã¢ã¦ã</button>
+      <div class="prof-title">プロフィール</div>
+      <div class="info-row"><span class="info-key">氏名</span><span class="info-val">${u.name}</span></div>
+      <div class="info-row"><span class="info-key">職種</span><span class="badge ${rc(u.role)}">${u.role}</span></div>
+      <div class="info-row"><span class="info-key">権限</span><span class="info-val">${u.isAdmin?'🔑 管理者':'👤 スタッフ'}</span></div>
+      <div class="info-row"><span class="info-key">メール</span><span style="font-size:0.78rem">${u.email}</span></div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:1rem" onclick="doLogout()">ログアウト</button>
     </div>
     <div class="prof-card">
-      <div class="prof-title">ð ${y}å¹´${mNames[m]}ã®ã·ããï¼${myShifts.length}ä»¶ï¼</div>
+      <div class="prof-title">📅 ${y}年${mNames[m]}のシフト（${myShifts.length}件）</div>
       ${shiftHTML}
     </div>
   </div>`;
@@ -766,7 +766,7 @@ async function addStaff(date, slot) {
   const member = S.staff.find(x => x.uid === sel.value);
   if (!member) return;
   const btn = sel.nextElementSibling;
-  if (btn) { btn.disabled = true; btn.textContent = 'è¿½å ä¸­...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '追加中...'; }
   await addToShift(date, slot, { uid: member.uid, name: member.name, role: member.role });
   render();
 }
@@ -784,7 +784,7 @@ async function toggleAdmin(uid, cur) {
 }
 
 async function delStaff(uid) {
-  if (!confirm('ãã®ã¹ã¿ãããåé¤ãã¾ããï¼')) return;
+  if (!confirm('このスタッフを削除しますか？')) return;
   await db.collection('users').doc(uid).delete();
   S.staff = S.staff.filter(x => x.uid !== uid);
   render();
